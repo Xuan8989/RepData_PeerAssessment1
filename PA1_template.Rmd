@@ -1,25 +1,116 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-
+#Reproducible Reseach Project 1
+Lin Xuan - 05/11/23 - Reproducible Research
 
 ## Loading and preprocessing the data
 
-
+```{r, echo=TRUE}
+getwd()
+activity <- read.csv("activity.csv")
+```
 
 ## What is mean total number of steps taken per day?
+First we aggregate the total steps by date, remove NA values.
 
+```{r, echo=TRUE}
+activityperday <- aggregate(activity$steps, by = list(activity$date), sum, na.rm = TRUE)
 
+activityperday <- setNames(activityperday, c("Date", "Steps"))
+
+print(activityperday)
+
+```
+We produce histogram to visualize the total steps taken per day.
+
+```{r, echo=TRUE}
+length(activityperday$Steps)
+
+hist(activityperday$Steps, breaks = 61, xlab = "Total steps taken per day", ylab = "Frequency", main = "Total Steps Taken Per Day")
+
+```
+Lastly, we calculate the median and mean of the total steps taken per day. 
+
+```{r, echo=TRUE}
+summary(activityperday$Steps)
+```
 
 ## What is the average daily activity pattern?
+We first aggregate the steps by intervals, then plot the time series plot to show the average number of steps taken on interval basis.
 
+```{r, echo=TRUE}
+activitytrue <- na.omit(activity)
+averageDailySteps <- aggregate(activitytrue$steps, by = list(activitytrue$interval), mean)
+averageDailySteps <- setNames(averageDailySteps, c("interval", "averageSteps"))
+plot(averageDailySteps$interval, averageDailySteps$averageSteps, type = "l", xlab = "Time", ylab = "Steps", main = "Time Series Plot")
+```
+
+Locate the max number of steps across intervals 
+
+```{r, echo=TRUE}
+max <- which.max(averageDailySteps$averageSteps)
+
+max_time <- averageDailySteps$interval[max]
+
+print(max_time)
+```
 
 
 ## Imputing missing values
+1. Calculate the total number of NA values.
+```{r, echo=TRUE}
+nas <- activity[is.na(activity), ]
+nrow(nas)
+```
+2. Use the mean for the 5-minute interval to fill in the NA values. Create a new dataset with no NA values. Plot the dataset with a histogram.
+```{r, echo=TRUE}
+imputedsteps <- averageDailySteps$averageSteps[match(activity$interval, averageDailySteps$interval)]
 
+activity[is.na(activity)] <- imputedsteps[is.na(activity)]
+
+eachdaysteps <- aggregate(activity$steps, by = list(activity$date), sum)
+
+eachdaysteps <- setNames(eachdaysteps, c("date", "totalSteps"))
+
+hist(eachdaysteps$totalSteps, breaks = 10, col = "light blue", main = "total steps taken each day", xlab = "Steps", ylab = "Frequency")
+```
+
+3. Calculate the mean and median of the total number of steps taken per day. 
+The mean and median is both 10776. Compared to the first part of the assignment, the values present a difference between the data sets with NA values filled or unfilled. 
+```{r, echo=TRUE}
+summary(eachdaysteps$totalSteps)
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+1. Create a new variable specifying weekdays and weekends.
+```{r,echo=TRUE}
+
+activity$date <- as.Date(activity$date, format = "%Y-%m-%d")
+
+activity$DayType <- sapply(activity$date, function(x) {
+  if(weekdays(x) == "Saturday" | weekdays(x) == "Sunday")
+  {y <- "Weekend"}
+  else {y <- "Weekday"}
+  y
+})
+
+```
+2. Make a panel plot in time series of the 5-minute interval and the average number of steps taken.
+```{r, echo=TRUE}
+weekday <- subset(activity, DayType == "Weekday")
+weekend <- subset(activity, DayType == "Weekend")
+
+averageweekday <- aggregate(weekday$steps, by = list(weekday$interval), mean)
+averageweekend <- aggregate(weekend$steps, by = list(weekend$interval), mean)
+averageweekday <- setNames(averageweekday, c("interval", "averageSteps"))
+averageweekend <- setNames(averageweekend, c("interval", "averageSteps"))
+
+par(mfrow = c(2, 1), mar = c(2, 2, 2, 2))
+
+plot(averageweekday$interval, averageweekday$averageSteps, type = "l", col = "light blue", xlab = "Time", ylab = "Steps", main = "Average Steps taken by intervals on Weekdays")
+plot(averageweekend$interval, averageweekend$averageSteps, type = "l", col = "light pink", xlab = "Time", ylab = "Steps", main = "Average Steps taken by intervals on Weekends")
+
+```
+
+
+
+
